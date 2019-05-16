@@ -66,6 +66,7 @@ def main(args):
 #sacctmgr -i add user marshall account=test
 #echo "done: sacctmgr show assoc tree:"
 #sacctmgr show assoc tree
+    # TODO: Add globals.local file to testsuite directory
     return 0
 
 
