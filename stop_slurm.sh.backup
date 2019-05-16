@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# quit
+# param - the exit code
+function quit {
+	exit $1
+}
+
+# This script is intended to be run by the root user
+if [ $UID != 0 ]; then
+	echo "ERROR: Must run this as root."
+	quit 1
+fi
+
+# This script must be run inside the sbin directory inside of
+# a slurm directory (not the root sbin directory; that would
+# be very bad).
+if [ "$PWD" = "/sbin" ] || [ "$PWD" = "/usr/local/sbin" ] || [ ${PWD##*/} != "sbin" ]; then
+	echo "ERROR: Must run in sbin directory in a slurm directory."
+	quit 2
+fi
+
+# Change to run directory, which contains the pid's
+# of all running Slurm daemons.
+cd ../run/
+
+# If the directory is empty, quietly exit, that
+# just means that no Slurm daemons are running.
+if [ -n "$(find . -prune -empty)" ]; then quit 0; fi
+
+# Kill all running Slurm daemons.
+for pid in $(cat *slurm*.pid); do kill $pid; done
+
+quit 0

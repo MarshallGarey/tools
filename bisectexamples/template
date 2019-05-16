@@ -1,0 +1,112 @@
+#!/bin/bash
+# Since Slurm can only upgrade the state files and database, not downgrade, I
+# have to start with the lowest version.
+# Run bisect like this:
+# git bisect run /path/to/this/file.sh
+
+# TODO: Make another script that does all the setup work that I can easily
+# modify a few parameters (bug number, slurm install directory) and it will
+# automatically create backup database and statesavelocation and change the
+# StateSaveLocation to bug$bugnumber (where $bugnumber is the bug number).
+
+# Make sure we have sudo privileges.
+sudo -v
+rc=$?
+if [ $rc != 0 ]
+then
+	echo "failed, need sudo privileges to run this script"
+	exit 1
+fi
+
+# TODO: remove this when the script is ready.
+echo "This is just a template for an auto bisect. Change things in here to make it work."
+exit 0
+
+###############################################################################
+# TODO: Set variables
+###############################################################################
+
+# TODO: Set slurm_install_dir to the correct location.
+slurm_install_dir="/home/marshall/slurm/17.02/byu"
+# TODO: Set bug number, ensure all paths are correct
+bugnumber="5902"
+# TODO: Set StateSaveLocation and create a backup
+statesave="state$bugnumber"
+statesavebackup="old$statesave"
+# TODO: Set the name of the database
+dbname="slurm_1702"
+# TODO: Backup the database - set the name of the backup file
+dbbackup="$slurm_install_dir/$dbname.dump"
+
+# TODO: Write a test; return 0 if good; return 1-124 if bad; return 125 if skip
+testname="$slurm_install_dir/test$bugnumber.sh"
+
+sacctmgr="$slurm_install_dir/bin/sacctmgr"
+
+###############################################################################
+# Rebuild
+###############################################################################
+
+# Change to the Slurm install directory. We need to be there for all of this.
+cd $slurm_install_dir
+
+# recompile
+echo "Rebuilding..."
+# TODO: consider using cleanbuild.sh vs cleanbuild-nodev.sh - no-dev doesn't use
+# --enable-developer or --disable-optimizations, because sometimes older
+# versions of Slurm generate compiler warnings now that didn't exist at the
+# time. Neither of these scripts use --enable-memory-leak-debug.
+cleanbuild-nodev.sh 2&>> $slurm_install_dir/$bugnumberbisect-build.out
+echo "Done"
+# restore state files
+echo "Restoring state files..."
+# TODO: modify slurm.conf to use state$bugnumber for its statesavelocation.
+rm -rf $statesave
+cp -r $statesavebackup $statesave
+echo "Done"
+# restore database
+echo "Restoring database..."
+mysql -u marshall $dbname < $dbbackup
+echo "Done"
+
+#done
+
+###############################################################################
+# Restart daemons
+###############################################################################
+
+# restart daemons - note I'm not using my script restart_slurm.sh, since that
+# doesn't sleep at all, but I need to sleep to wait for the database upgrade and
+# slurmctld state upgrade and nodes to start and check in with slurmctld.
+echo "Restarting daemons..."
+cd sbin
+stop_slurm.sh
+./slurmdbd
+sleep 5
+# wait for upgrade to finish before starting slurmctld
+# This works, unless sacctmgr breaks, which it did (segfault) when I was
+# bisecting from 17.02 to 17.11. So, I'm sleeping instead. It's fast enough.
+#while true; do
+#	$sacctmgr show assoc > /dev/null
+#	if [ $? == 0 ]
+#	then
+#		break
+#	else
+#		echo "waiting for slurmdbd upgrade..."
+#		sleep 1
+#	fi
+#done
+
+./slurmctld
+sleep 1
+start_slurmd.sh 1 10 v
+# Wait to make sure nodes are up
+sleep 4
+cd ..
+
+###############################################################################
+# Run the test:
+###############################################################################
+./$testname
+exit $?
+
