@@ -54,6 +54,9 @@ def main(args):
     subprocess.run(["ls", args.conf_dir])
     print("")
     subprocess.run(["cp", "-rL", args.conf_dir, slurm_install])
+
+    # TODO: Set database name in slurmdbd.conf
+    # TODO: Actually start slurm, initialize database (cluster and associations), start daemons
     return 0
 
 
