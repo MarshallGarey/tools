@@ -1,8 +1,8 @@
 #!/bin/bash
-exit 0
 
 # Paths to tests
-curr="/home/marshall/slurm/18.08"
+prev="/home/marshall/slurm/18.08"
+curr="/home/marshall/slurm/19.05"
 master="/home/marshall/slurm/master"
 #tools="/home/marshall/tools"
 
@@ -17,21 +17,30 @@ include="1.1,1.2,1.3"
 exclude="30.1,6.14,10.3,10.7,10.9"
 
 #
+# Run the testsuite on the previous version
+#
+cd "$prev/slurm/testsuite/expect"
+outputfile="regression-results/`$datecmd`.out"
+./regression.py -e$exclude >> $outputfile
+echo "We did not run these tests: $exclude" >> $outputfile
+
+
+#
 # Run the testsuite on the current version
 #
-
 cd "$curr/slurm/testsuite/expect"
 outputfile="regression-results/`$datecmd`.out"
 ./regression.py -e$exclude >> $outputfile
+echo "We did not run these tests: $exclude" >> $outputfile
 
 
 #
 # Run the testsuite on master
 #
-
 #cd "$master/slurm/testsuite/expect"
 #outputfile="regression-results/`$datecmd`.out"
 #./regression.py -e$exclude >> $outputfile
+#echo "We did not run these tests: $exclude" >> $outputfile
 
 
 
