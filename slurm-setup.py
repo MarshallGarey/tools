@@ -49,12 +49,14 @@ def main(args):
         subprocess.run(config_prog)
         subprocess.run(build_prog)
 
-    # Copy slurm etc directory and TODO: set ports in slurm.conf and slurmdbd.conf
+    # Copy slurm etc directory
     print("Copy these files from {:s}: ".format(args.conf_dir))
     subprocess.run(["ls", args.conf_dir])
     print("")
     subprocess.run(["cp", "-rL", args.conf_dir, slurm_install])
 
+    # TODO: Change paths in slurm.conf and slurmdbd.conf
+    # TODO: Change ports in slurm.conf and slurmdbd.conf
     # TODO: Set database name in slurmdbd.conf
     # TODO: Actually start slurm, initialize database (cluster and associations), start daemons
     return 0
